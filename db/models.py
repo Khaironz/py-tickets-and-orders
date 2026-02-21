@@ -1,3 +1,6 @@
+from typing import Iterable, Optional
+
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -65,7 +68,7 @@ class User(AbstractUser):
 class Order(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(
-        to=User,
+        to=settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name="orders",
     )
@@ -107,6 +110,10 @@ class Ticket(models.Model):
         )
 
     def clean(self) -> None:
+        if self.movie_session is None:
+            raise ValidationError(
+                {"movie_session": ["movie_session cannot be null"]}
+            )
         hall = self.movie_session.cinema_hall
         if not (1 <= self.row <= hall.rows):
             raise ValidationError(
@@ -131,8 +138,8 @@ class Ticket(models.Model):
         self,
         force_insert: bool = False,
         force_update: bool = False,
-        using: str = None,
-        update_fields: list = None,
+        using: Optional[str] = None,
+        update_fields: Optional[Iterable[str]] = None,
     ) -> None:
         self.full_clean()
         super().save(
